@@ -1,7 +1,7 @@
-from general import os, pathlib
+from general import os
 
 def f(mdot,d,alpha,*args):
-    # ROOT FOLDER
+    ## Root folder
     # root = ''
     root = os.path.normpath(os.getcwd()+os.sep+os.pardir)
 

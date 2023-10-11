@@ -1,5 +1,6 @@
-from general import os, np
+from general import *
 import pandas as pd
+import linecache
 
 def f(directory):
     # files = glob.glob(os.path.join(directory,'*.txt'))
@@ -16,5 +17,9 @@ def f(directory):
             else:
                 WaveData = np.dstack((WaveData,tempdata))
 
-    print('okay')
-    # return realization
+    tlim = linecache.getline(os.path.join(directory,filename),7).strip()
+    tlim = float(tlim[21:32])
+
+    t = np.linspace(0,tlim,WaveData.shape[0])
+
+    return WaveData, t

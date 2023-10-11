@@ -1,6 +1,7 @@
-print(f'Invoking __init__.py for {__name__}')
+print(f'Loading {__name__} package complete')
 
 __all__ = [
         'wfm2mat',
-        'definefolder'
+        'definefolder',
+        'chunking'
         ]
