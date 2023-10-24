@@ -1,11 +1,18 @@
-# %%
-from general import *
-from inout import *
-from ko import *
+#%% IMPORT
+# from general import *
+from ioload import *
+from visual import *
+from iopsd2p import *
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 
-# %%
-## DEFINE
+class structured:
+    def __getattr__(self,name):
+        self.__dict__[name] = structured()
+        return self.__dict__[name]
+
+#%% DEFINITIONS
 
 ## d = axial distance [mm]
 d = 20
@@ -18,14 +25,13 @@ rot = 25
 forced = 0
 day = '16.10'
 ## Number of chunks in which to divide the waveform
-chunks = 10
+chunks = 1
 ## Binning parameters (none of those depend on the dataset)
 df = 200       # Hz
 dk = 3         # deg
 flim = 1e5     # upper limit frequency
 
-# %%
-## INPUT OUTPUT
+#%% INPUT-OUTPUT
 
 directory = definefolder.f(mdot,d,alpha,day)
 
@@ -36,8 +42,9 @@ WaveData, t = wfm2mat.f(directory)
 
 WaveData_c, t_c = chunking.f(t,WaveData,chunks)
 
-# %%
-## PERFORM FFTs
+params = {'mdot':mdot,'d':d,'alpha':alpha}
+
+#%% PERFORM FFTs
 # WaveData_t = np.zeros((WaveData_c.shape),dtype=np.complex_)
 temp = []
 for i in range(0,WaveData_c.shape[2]):
@@ -58,48 +65,83 @@ if df < fRFT[1]-fRFT[0]:
 
 fRFTbin = np.arange(fRFT[0],flim+df,df)
 
-# %%
-## COMPUTE SPECTRAL DENSITIES
-temp = CSD.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT,flim,chunks)
-csd32 = temp[0]
-psd3 = temp[1]
-psd2 = temp[2]
-fRFTcut = temp[3]
+#%% COMPUTE SPECTRAL DENSITIES
+csd32,psd3,psd2,fRFTcut = CSD.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT,flim,chunks)
 
-temp = CSD.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT,flim,chunks)
-csd24 = temp[0]
-psd4 = temp[2]
+csd24,_,psd4,_ = CSD.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT,flim,chunks)
 
-temp = CSD.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT,flim,chunks)
-csd12 = temp[0]
-psd1 = temp[1]
+csd12,psd1,_,_ = CSD.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT,flim,chunks)
 
-del temp
-
-#%%
-# CORRECT PROBE ORIENTATION
+#%% CORRECT PROBE ORIENTATION
 # Provisional, only accounts for counterclockwise rotation along the
 # azimuthal direction
 
-psd2p_az = {'pow':abs(csd32),'ang':np.angle(csd32)}
+csdaz = {'pow':abs(csd32),'ang':np.angle(csd32),'orig':csd32}
 
-psd2p_ax = {}
-psd2p_ax['pow'] = np.sqrt(abs(csd24)**2*np.cos(np.deg2rad(rot))**2 + \
+csdax = {}
+csdax['pow'] = np.sqrt(abs(csd24)**2*np.cos(np.deg2rad(rot))**2 +
                           abs(csd12)**2*np.sin(np.deg2rad(rot))**2)
-psd2p_ax['ang'] = np.angle(csd24)*np.cos(np.deg2rad(rot)) - \
+csdax['ang'] = np.angle(csd24)*np.cos(np.deg2rad(rot)) - \
                     np.angle(csd12)*np.sin(np.deg2rad(rot))
+csdax['orig'] = csd24
       
-psd2p_rd = {}
-psd2p_rd['pow'] = np.sqrt(abs(csd24)**2*np.sin(np.deg2rad(rot))**2 + \
+csdrd = {}
+csdrd['pow'] = np.sqrt(abs(csd24)**2*np.sin(np.deg2rad(rot))**2 +
                           abs(csd12)**2*np.cos(np.deg2rad(rot))**2)
-psd2p_rd['ang'] = np.angle(csd24)*np.sin(np.deg2rad(rot)) + \
+csdrd['ang'] = np.angle(csd24)*np.sin(np.deg2rad(rot)) + \
                     np.angle(csd12)*np.cos(np.deg2rad(rot))
+csdrd['orig'] = csd12
 
-#%%
-## COMPUTE PSD2Ps
+#%% COMPUTE PSD2Ps
 
-komega_binning.f(fRFT,psd2p_az['ang'],psd2p_az['pow'],fRFTbin,np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+kkaz,ffaz,hhaz = binpsd2p.f(fRFT,csdaz['ang'],csdaz['pow'],fRFTbin,
+                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
 
+kkax,ffax,hhax = binpsd2p.f(fRFT,csdax['ang'],csdax['pow'],fRFTbin,
+                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+
+kkrd,ffrd,hhrd = binpsd2p.f(fRFT,csdrd['ang'],csdrd['pow'],fRFTbin,
+                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+
+#%% COMPUTE STATISTICS
+
+statsaz = computestats.f(csdaz,psd3,psd2,fRFT,df,flim)
+
+statsax = computestats.f(csdax,psd2,psd4,fRFT,df,flim)
+
+statsrd = computestats.f(csdrd,psd1,psd2,fRFT,df,flim)
+
+## ROTATE COHERENCE
+
+mscaz = abs(statsaz['coherence']**2)
+mscax = abs(statsax['coherence']**2*np.cos(np.deg2rad(rot))**2 + 
+            abs(statsrd['coherence']**2*np.sin(np.deg2rad(rot))**2))
+mscrd = abs(statsax['coherence']**2*np.sin(np.deg2rad(rot))**2 + 
+            abs(statsrd['coherence']**2*np.cos(np.deg2rad(rot))**2))
+
+statsaz['coherence'] = mscaz
+statsax['coherence'] = mscax
+statsrd['coherence'] = mscrd
+
+#%% PLOT
+
+kk = {'az':kkaz,'ax':kkax,'rd':kkrd}
+ff = {'az':ffaz,'ax':ffax,'rd':ffrd}
+hh = {'az':hhaz,'ax':hhax,'rd':hhrd}
+stats = {'az':statsaz,'ax':statsax,'rd':statsrd}
+
+separateplots.f(kk,ff,hh,stats,params)
+
+    
+# cdict = {
+#   'red'  :  ( (0.0, 0.25, .25), (0.02, .59, .59), (1., 1., 1.)),
+#   'green':  ( (0.0, 0.0, 0.0), (0.02, .45, .45), (1., .97, .97)),
+#   'blue' :  ( (0.0, 1.0, 1.0), (0.02, .75, .75), (1., 0.45, 0.45))
+# }
+# cm = m.colors.LinearSegmentedColormap('mycmap',cdict,1024)
+# plt.figure()
+# plt.pcolor(kk,ff,hh,cmap=cm,vmin=1e-11,vmax=1e-4)
+# plt.colorbar()
 
 
 
