@@ -5,7 +5,6 @@ from visual import separateplots
 from iopsd2p import binpsd2p, computefft,computestats, csd
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
 class structured:
     def __getattr__(self,name):
