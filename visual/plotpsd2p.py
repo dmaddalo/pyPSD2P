@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
-
 def f(kk,ff,hh):
     plt.figure()
     plt.pcolor(kk/0.01,ff,hh,
