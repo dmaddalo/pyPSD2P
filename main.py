@@ -1,8 +1,8 @@
 #%% IMPORT
 # from general import *
-from ioload import *
-from visual import *
-from iopsd2p import *
+from ioload import chunking, definefolder, wfm2mat
+from visual import separateplots
+from iopsd2p import binpsd2p, computefft,computestats, csd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
