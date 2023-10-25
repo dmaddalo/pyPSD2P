@@ -82,3 +82,4 @@ def f(kk,ff,hh,stats,params):
     plt.xlabel('$\omega$ [Hz]')
     plt.title('Coherence; \n $\dot{m}$ = '+str(params['mdot'])+
               ' SCCM, $d$ = '+str(params['d'])+r' mm, $\alpha$ = '+str(params['alpha'])+' deg')
+    plt.legend(('azimuthal','axial','radial'))
