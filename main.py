@@ -66,11 +66,11 @@ if df < fRFT[1]-fRFT[0]:
 fRFTbin = np.arange(fRFT[0],flim+df,df)
 
 #%% COMPUTE SPECTRAL DENSITIES
-csd32,psd3,psd2,fRFTcut = CSD.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT,flim,chunks)
+csd32,psd3,psd2,fRFTcut = csd.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT,flim,chunks)
 
-csd24,_,psd4,_ = CSD.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT,flim,chunks)
+csd24,_,psd4,_ = csd.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT,flim,chunks)
 
-csd12,psd1,_,_ = CSD.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT,flim,chunks)
+csd12,psd1,_,_ = csd.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT,flim,chunks)
 
 #%% CORRECT PROBE ORIENTATION
 # Provisional, only accounts for counterclockwise rotation along the
