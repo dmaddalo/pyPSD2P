@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from visual import plotpsd2p
 
-
 def f(kk,ff,hh,stats,params):
     lowstdaz = stats['az']['meanphase']-stats['az']['stdphase']
     uppstdaz = stats['az']['meanphase']+stats['az']['stdphase']
