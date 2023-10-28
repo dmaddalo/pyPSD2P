@@ -18,17 +18,17 @@ d = 20
 ## alpha = angular displacement [deg]
 alpha = 50
 ## SCCM
-mdot = 1.4
+mdot = 1
 ##
 rot = 25
 forced = 0
-day = '16.10'
+day = '5.10'
 ## Number of chunks in which to divide the waveform
 chunks = 1
 ## Binning parameters (none of those depend on the dataset)
 df = 200       # Hz
-dk = 3         # deg
-flim = 1e5     # upper limit frequency
+dk = 1         # deg
+flim = 2e5     # upper limit frequency
 
 #%% INPUT-OUTPUT
 
@@ -65,11 +65,11 @@ if df < fRFT[1]-fRFT[0]:
 fRFTbin = np.arange(fRFT[0],flim+df,df)
 
 #%% COMPUTE SPECTRAL DENSITIES
-csd32,psd3,psd2,fRFTcut = csd.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT,flim,chunks)
+csd32,psd3,psd2,_ = csd.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT)
 
-csd24,_,psd4,_ = csd.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT,flim,chunks)
+csd24,_,psd4,_ = csd.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT)
 
-csd12,psd1,_,_ = csd.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT,flim,chunks)
+csd12,psd1,_,_ = csd.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT)
 
 #%% CORRECT PROBE ORIENTATION
 # Provisional, only accounts for counterclockwise rotation along the

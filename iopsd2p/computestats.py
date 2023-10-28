@@ -4,14 +4,20 @@ def f(csdij,psdi,psdj,f,df,flim):
     
     fbin = np.arange(f[0],flim+df,df)
     
-    fbinc = np.append(fbin,fbin[-1]+fbin[1])
-    fi = np.digitize(f,fbinc)
-    fi = fi[0:np.argmax(fi == np.unique(fi)[-2])+1]
+    if f[-1] >= fbin[-1]+df:
+        fx = np.where(abs(f-fbin[-1]-fbin[1]) == min(abs(f-fbin[-1]-fbin[1])))[0][0]
+    else:
+        fx = f.shape[0]
+        
+    f = f[0:fx]
     
-    powercsd = csdij['pow']
-    phasecsd = csdij['ang']
-    origcsd = csdij['orig']
+    fi = np.digitize(f,fbin)
     
+    powercsd = csdij['pow'][0:fx,:]
+    phasecsd = csdij['ang'][0:fx,:]
+    origcsd = csdij['orig'][0:fx,:]
+    psdi = psdi[0:fx,:]
+    psdj = psdj[0:fx,:]
     
     stats = {'meanphase':np.zeros((fi[-1])),'stdphase':np.zeros((fi[-1])),
              'meanpow':np.zeros((fi[-1])),'stdpow':np.zeros((fi[-1])),
