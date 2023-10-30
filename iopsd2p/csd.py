@@ -1,13 +1,13 @@
 import numpy as np
 
-def f(fs1,fs2,f,*args):
-    if args:
-        flim = args[0]
+def f(fs1,fs2,f,**kwargs):
+    if 'flim' in kwargs:
+        flim = kwargs['flim']
     else:
         flim = f[-1]
         
-    if len(args) > 1:
-        chunks = args[1]
+    if 'chunks' in kwargs:
+        chunks = kwargs['chunks']
     else:
         chunks = 1
 
