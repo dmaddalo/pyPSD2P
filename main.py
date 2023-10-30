@@ -41,7 +41,7 @@ WaveData, t = wfm2mat.f(directory)
 
 WaveData_c, t_c = chunking.f(t,WaveData,chunks)
 
-params = {'mdot':mdot,'d':d,'alpha':alpha}
+params = {'mdot':mdot,'d':d,'alpha':alpha,'flim':flim}
 
 #%% PERFORM FFTs
 # WaveData_t = np.zeros((WaveData_c.shape),dtype=np.complex_)
