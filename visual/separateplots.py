@@ -24,7 +24,7 @@ def f(kk,ff,hh,stats,params):
     plt.plot(stats['az']['fRFTbin'],10**(stats['az']['meanpow']-stats['az']['stdpow']),c='r')
     plt.yscale('log')
     plt.xlim([0,1e5])
-    plt.ylim([1e-11,1e-4])
+    plt.ylim([1e-12,1e-4])
     plt.xlabel('$\omega$ [Hz]')
     plt.ylabel('$P_{az}$ [V$^2$ s$^{-1}$]')
     plt.title('Azimuthal cross-power spectrum; \n $\dot{m}$ = '+str(params['mdot'])+
@@ -45,7 +45,7 @@ def f(kk,ff,hh,stats,params):
     plt.plot(stats['ax']['fRFTbin'],10**(stats['ax']['meanpow']-stats['ax']['stdpow']),c='r')
     plt.yscale('log')
     plt.xlim([0,1e5])
-    plt.ylim([1e-11,1e-4])
+    plt.ylim([1e-12,1e-4])
     plt.xlabel('$\omega$ [Hz]')
     plt.ylabel('$P_{ax}$ [V$^2$ s$^{-1}$]')
     plt.title('Axial cross-power spectrum; \n $\dot{m}$ = '+str(params['mdot'])+
@@ -66,7 +66,7 @@ def f(kk,ff,hh,stats,params):
     plt.plot(stats['rd']['fRFTbin'],10**(stats['rd']['meanpow']-stats['rd']['stdpow']),c='r')
     plt.yscale('log')
     plt.xlim([0,1e5])
-    plt.ylim([1e-11,1e-4])
+    plt.ylim([1e-12,1e-4])
     plt.xlabel('$\omega$ [Hz]')
     plt.ylabel('$P_{rd}$ [V$^2$ s$^{-1}$]')
     plt.title('Radial cross-power spectrum; \n $\dot{m}$ = '+str(params['mdot'])+
