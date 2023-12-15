@@ -14,30 +14,29 @@ class structured:
 #%% DEFINITIONS
 
 ## Langmuir probes (LPs) moving or fixed in space, 'fixedlang' or 'movinglang'. 
-## This script mostly only supports the 'fixedlang' option adequately. Use 
-## 'main_movinglang.py' for datasets in which the LPs are moving.
-lang = 'fixedlang'  # do not change
+## This script mostly only supports the 'movinglang' option adequately. Use 
+## 'main.py' for datasets in which the LPs are fixed.
+lang = 'movinglang'     # do not change
 
-## The positions below are referred to the CP.
+## The positions below are referred to the LPs.
 ## When the LPs are fixed in space, the positions 'rho' and 'alpha' are to be
 ## intended the ones of the CP. Alternatively, if the LPs are moving in space,
 ## the aforementioned positions are referred to the LPs.
 # rho = axial distance [mm]
-rho = 200
+rho = 70
 # alpha = angular displacement [deg]
 alpha = 0
-
 # SCCM
-mdot = 1
+mdot = 1.4
 # Rotation to adjust the probes orientation. Only rotation along axis 1 is supported.
-rot = 25
+rot = 0
 # Forced oscillations induced by the microwave generator, 1 (True) or 0 (False)
 forced = 0
 # Day of the acquisitions
-day = '16.10'
+day = '7.12'
 # Any additional option (this is a parent folder of the main "mdot_rho_alpha"
 # folder). Leave blank, i.e. '', if no additional option is to be specified.
-opsparent = 'cp_rhos'
+opsparent = 'angularscan'
 # Any additional option (this is a child folder of the main "mdot_rho_alpha"
 # folder). Leave blank, i.e. '', if no additional option is to be specified.
 opschild = ''
@@ -47,8 +46,8 @@ chunks = 1
 df = 200       # Hz
 dk = 1         # deg
 flim = 2e5     # upper limit frequency
-cscale = 'log'  # colorscale for the dispersion plot, "log" or "lin"
-savefig = True     # choose whether to save the output figures
+cscale = 'log'      # colorscale for the dispersion plot, "log" or "lin"
+savefig = False     # choose whether to save the output figures
 
 #%% INPUT-OUTPUT
 
@@ -74,21 +73,24 @@ if savefig == True:
 WaveData_m = np.mean(WaveData_c,axis=0)
 WaveData_f = WaveData_c - WaveData_m
 
-temp = []
 for i in range(0,WaveData_f.shape[2]):
-    # fRFT, WaveData_t = computefft.f(t_c,WaveData_c[:,:,i])
-    temp.append(computefft.f(t_c,WaveData_f[:,:,i]))
-
     if i == 0:
-        WaveData_t = temp[i][1]
-        fRFT = temp[i][0]
+        fRFT, WaveData_t = computefft.f(t,WaveData_f[:,:,i])
     else:
-        WaveData_t = np.dstack((WaveData_t,temp[i][1]))
+        WaveData_t = np.dstack((WaveData_t,computefft.f(t,WaveData_f[:,:,i],
+                                                        returnf=False)))
+        
+#     # fRFT, WaveData_t = computefft.f(t_c,WaveData_c[:,:,i])
+#     temp.append(computefft.f(t_c,WaveData_f[:,:,i]))
 
-del temp
+#     if i == 0:
+#         WaveData_t = temp[i][1]
+#         fRFT = temp[i][0]
+#     else:
+#         WaveData_t = np.dstack((WaveData_t,temp[i][1]))
 
-if WaveData_t.ndim == 2:
-    WaveData_t = WaveData_t[...,None]
+# del temp
+
 
 if df < fRFT[1]-fRFT[0]:
     df = fRFT[1]-fRFT[0]
@@ -97,69 +99,87 @@ fRFTbin = np.arange(fRFT[0],flim+df,df)
 
 #%% COMPUTE SPECTRAL DENSITIES
 
-csd32,psd3,psd2,_ = csd.f(WaveData_t[:,2,:],WaveData_t[:,1,:],fRFT)
+if WaveData_t.ndim == 2:
+    WaveData_t = WaveData_t[...,np.newaxis]
 
-csd24,_,psd4,_ = csd.f(WaveData_t[:,1,:],WaveData_t[:,3,:],fRFT)
+csd12,psd2,psd1,_ = csd.f(WaveData_t[:,1,:],WaveData_t[:,0,:],fRFT)
 
-csd12,psd1,_,_ = csd.f(WaveData_t[:,0,:],WaveData_t[:,1,:],fRFT)
+csd13,psd3,_,_ = csd.f(WaveData_t[:,2,:],WaveData_t[:,0,:],fRFT)
+
+csd14,psd4,_,_ = csd.f(WaveData_t[:,3,:],WaveData_t[:,0,:],fRFT)
 
 #%% CORRECT PROBE ORIENTATION
 # Provisional, only accounts for counterclockwise rotation along the
 # azimuthal direction
 
-csdaz = {'pow':abs(csd32),'ang':np.angle(csd32),'orig':csd32}
+csdaz = {'pow':abs(csd12),'ang':np.angle(csd12),'orig':csd12}
 
-csdax = {}
-csdax['pow'] = np.sqrt(abs(csd24)**2*np.cos(np.deg2rad(rot))**2 +
-                          abs(csd12)**2*np.sin(np.deg2rad(rot))**2)
-csdax['ang'] = np.angle(csd24)*np.cos(np.deg2rad(rot)) - \
-                    np.angle(csd12)*np.sin(np.deg2rad(rot))
-csdax['orig'] = csd24
+csdax = {'pow':abs(csd13),'ang':np.angle(csd13),'orig':csd13}
       
-csdrd = {}
-csdrd['pow'] = np.sqrt(abs(csd24)**2*np.sin(np.deg2rad(rot))**2 +
-                          abs(csd12)**2*np.cos(np.deg2rad(rot))**2)
-csdrd['ang'] = np.angle(csd24)*np.sin(np.deg2rad(rot)) + \
-                    np.angle(csd12)*np.cos(np.deg2rad(rot))
-csdrd['orig'] = csd12
-
-#%% COMPUTE PSD2Ps
-
-kkaz,ffaz,hhaz = binpsd2p.f(fRFT,csdaz['ang'],csdaz['pow'],fRFTbin,
-                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
-
-kkax,ffax,hhax = binpsd2p.f(fRFT,csdax['ang'],csdax['pow'],fRFTbin,
-                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
-
-kkrd,ffrd,hhrd = binpsd2p.f(fRFT,csdrd['ang'],csdrd['pow'],fRFTbin,
-                        np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+csdrd = {'pow':abs(csd14),'ang':np.angle(csd14),'orig':csd14}
+# csdrd = {'pow':abs(csd13),'ang':np.angle(csd13),'orig':csd13}
 
 #%% COMPUTE STATISTICS
 
-statsaz = computestats.f(csdaz,psd3,psd2,fRFT,df,flim)
+statsaz = computestats.f(csdaz,psd1,psd2,fRFT,df,flim)
 
-statsax = computestats.f(csdax,psd2,psd4,fRFT,df,flim)
+statsax = computestats.f(csdax,psd1,psd3,fRFT,df,flim)
 
-statsrd = computestats.f(csdrd,psd1,psd2,fRFT,df,flim)
+statsrd = computestats.f(csdrd,psd1,psd4,fRFT,df,flim)
+# statsrd = computestats.f(csdrd,psd1,psd3,fRFT,df,flim)
 
 ## ROTATE COHERENCE
 
 mscaz = abs(statsaz['coherence']**2)
-mscax = abs(statsax['coherence']**2*np.cos(np.deg2rad(rot))**2 + 
-            abs(statsrd['coherence']**2*np.sin(np.deg2rad(rot))**2))
-mscrd = abs(statsax['coherence']**2*np.sin(np.deg2rad(rot))**2 + 
-            abs(statsrd['coherence']**2*np.cos(np.deg2rad(rot))**2))
+mscax = abs(statsax['coherence']**2)
+mscrd = abs(statsrd['coherence']**2)
 
 statsaz['coherence'] = mscaz
 statsax['coherence'] = mscax
 statsrd['coherence'] = mscrd
 
+#%% COMPUTE PSD2Ps, log scale with cross-power
+
+if params['colorscale'] == 'log':
+    kkaz,ffaz,hhaz = binpsd2p.f(fRFT,csdaz['ang'],csdaz['pow'],fRFTbin,
+                            np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+    
+    kkax,ffax,hhax = binpsd2p.f(fRFT,csdax['ang'],csdax['pow'],fRFTbin,
+                            np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+    
+    kkrd,ffrd,hhrd = binpsd2p.f(fRFT,csdrd['ang'],csdrd['pow'],fRFTbin,
+                            np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+
+#%% COHERENCE PSD2Ps, linear scale with coherence
+
+elif params['colorscale'] == 'lin':
+    kkaz,ffaz,hhaz = binpsd2p.f(statsaz['fRFTbin'],statsaz['meanphase'],
+                                statsaz['coherence'],fRFTbin,
+                                np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+    
+    kkax,ffax,hhax = binpsd2p.f(statsax['fRFTbin'],statsax['meanphase'],
+                                statsax['coherence'],fRFTbin,
+                                np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+    
+    kkrd,ffrd,hhrd = binpsd2p.f(statsrd['fRFTbin'],statsrd['meanphase'],
+                                statsrd['coherence'],fRFTbin,
+                                np.arange(-np.pi,np.pi,np.deg2rad(dk)))
+
 #%% PLOT
 
-kk = {'az':kkaz,'ax':kkax,'rd':kkrd}
-ff = {'az':ffaz,'ax':ffax,'rd':ffrd}
-hh = {'az':hhaz,'ax':hhax,'rd':hhrd}
-stats = {'az':statsaz,'ax':statsax,'rd':statsrd}
+kk = {'az':kkaz, \
+      'ax':kkax, \
+      'rd':kkrd}
+ff = {'az':ffaz, \
+      'ax':ffax, \
+      'rd':ffrd}
+hh = {'az':hhaz, \
+      'ax':hhax, \
+      'rd':hhrd}
+    
+stats = {'az':statsaz, \
+         'ax':statsax, \
+         'rd':statsrd}
 
 separateplots.f(kk,ff,hh,stats,params)
 
