@@ -10,6 +10,11 @@ def f(fs1,fs2,f,**kwargs):
         chunks = kwargs['chunks']
     else:
         chunks = 1
+        
+    if fs1.ndim == 1:
+        fs1 = fs1[:,None]
+    if fs2.ndim == 1:
+        fs2 = fs2[:,None]
 
     
     m = np.argwhere(abs(f-flim) < f[1]-f[0])
